@@ -1,23 +1,85 @@
-source=main
-freq=16000000
-port=/dev/ttyUSB0
-programmer=stk500
-arch=m16
-arch_gcc=atmega16
-cflags=-Wall -Os -Werror -Wextra -Wdouble-promotion -Wformat=2 -Wformat-overflow -Wformat-truncation -Wundef -fno-common -fstack-usage -Wconversion -ffunction-sections -ffast-math
-cflags_testing=-Wall -Os -Werror -Wextra -Wdouble-promotion -Wformat=2 -Wformat-overflow -Wformat-truncation -Wundef -Wconversion
+# project name
+PRJ = main
+# avr mcu
+MCU = atmega16
+# mcu clock frequency
+CLK = 16000000
+# avr programmer (and port if necessary)
+PRG = stk500
+# programmer port
+COM = /dev/ttyUSB
+# see http://www.engbedded.com/fusecalc/
+LFU = 0x80
+HFU = 0x99
+# program source files (not including external libraries)
+SRC = $(PRJ).cpp
+# where to look for external libraries
+EXT =
 
-build:
-	avr-gcc -mmcu=$(arch_gcc) $(source).c -o $(source).o -DF_CPU=$(freq) $(cflags)
-	avr-objcopy -j .text -j .data -O ihex  $(source).o  $(source).hex
-	avr-strip $(source).hex -s
+# include path
+INCLUDE := $(foreach dir, $(EXT), -I$(dir))
+# c flags
+CFLAGS    = -Wall -Wextra -Os -DF_CPU=$(CLK) -mmcu=$(MCU) $(INCLUDE)
+# any aditional flags for c++
+CPPFLAGS =
 
-build-testing:
-	avr-gcc -mmcu=$(arch_gcc) $(source).c -o $(source).o -DF_CPU=$(freq) $(cflags_testing)
-	avr-objcopy -j .text -j .data -O ihex  $(source).o  $(source).hex
+# executables
+AVRDUDE = avrdude -c $(PRG) -p $(MCU)
+OBJCOPY = avr-objcopy
+OBJDUMP = avr-objdump
+SIZE    = avr-size --format=avr --mcu=$(MCU)
+CC      = avr-gcc
+STRIP   = avr-strip
 
-upload:
-	avrdude -c $(programmer) -P $(port) -p $(arch) -u -U flash:w:$(source).hex
+# generate list of objects
+CFILES    = $(filter %.c, $(SRC))
+EXTC     := $(foreach dir, $(EXT), $(wildcard $(dir)/*.c))
+CPPFILES  = $(filter %.cpp, $(SRC))
+EXTCPP   := $(foreach dir, $(EXT), $(wildcard $(dir)/*.cpp))
+OBJ       = $(CFILES:.c=.o) $(EXTC:.c=.o) $(CPPFILES:.cpp=.o) $(EXTCPP:.cpp=.o)
 
-disasm:
-	avr-objdump -S $(source).o
+# user targets
+# compile all files
+all: $(PRJ).hex
+
+# test programmer connectivity
+test:
+	$(AVRDUDE) -P $(COM) -v
+
+# flash program to mcu
+flash: all
+	$(AVRDUDE) -U -P $(COM) flash:w:$(PRJ).hex:i
+
+# write fuses to mcu
+fuse:
+	$(AVRDUDE) -U -P $(COM) lfuse:w:$(LFU):m -U hfuse:w:$(HFU):m
+
+# generate disassembly files for debugging
+disasm: $(PRJ).elf
+	$(OBJDUMP) -d $(PRJ).elf
+
+# remove compiled files
+clean:
+	rm -f *.hex *.elf *.o
+	$(foreach dir, $(EXT), rm -f $(dir)/*.o;)
+
+# other targets
+# objects from c files
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# objects from c++ files
+.cpp.o:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+# elf file
+$(PRJ).elf: $(OBJ)
+	$(CC) $(CFLAGS) -o $(PRJ).elf $(OBJ)
+	$(STRIP) -s $(PRJ).elf
+
+# hex file
+$(PRJ).hex: $(PRJ).elf
+	rm -f $(PRJ).hex
+	$(OBJCOPY) -j .text -j .data -O ihex $(PRJ).elf $(PRJ).hex
+	$(STRIP) -s $(PRJ).hex
+	$(SIZE) $(PRJ).elf
