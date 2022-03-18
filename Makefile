@@ -4,7 +4,7 @@ PRJ = main
 MCU = atmega16
 # mcu clock frequency
 CLK = 16000000
-# avr programmer (and port if necessary)
+# avr programmer
 PRG = stk500
 # programmer port
 COM = /dev/ttyUSB
