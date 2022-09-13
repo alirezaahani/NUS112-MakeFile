@@ -1,7 +1,7 @@
 # nus112_makefile
 Make file for the NUS112 AVR programmer   
-The NUS112 programmer is basically a STK500 programmer, but a lot less stable.  
-I highly recommend to only use the ISP protocol for programming the AVR, as the Zip broke some pins of the micro controller.   
+The NUS112 programmer is basically a STK500 programmer, but with many features removed.  
+I recommend using the ISP protocol for programming the microcontroller, as the ZIP interface breaks the pins.   
 
 `all`:    compiles the source code  
 `test`:   tests the isp connection to the mcu  
