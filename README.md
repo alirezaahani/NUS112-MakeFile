@@ -1,7 +1,7 @@
 # NUS112 Makefile
 
-Makefile for the NUS112 AVR programmer
-This is a Makefile for compiling and programming AVR microcontroller projects. It provides convenient targets for compiling, flashing the program to the microcontroller, writing fuses, generating disassembly files, and cleaning the compiled files.
+Makefile for the NUS112 AVR programmer  
+This is a Makefile for compiling and programming AVR microcontroller projects. It provides convenient targets for compiling, flashing the program to the microcontroller, writing fuses, generating disassembly files, and cleaning the compiled files.  
 The NUS112 programmer is basically a STK500 programmer, but with many features removed.  
 
 ## Requirements
